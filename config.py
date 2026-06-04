@@ -11,5 +11,10 @@ class AppConfig(BaseModel):
     )
     # Default fallback branch if the remote branch is not set
     default_comparison_branch: str = "main"
+    
+    # LLM Settings
+    api_key: str = Field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
+    api_base: str = Field(default_factory=lambda: os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"))
+    model_name: str = Field(default_factory=lambda: os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
 
 config = AppConfig()
