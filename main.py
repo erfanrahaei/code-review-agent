@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from git_utils import GitChangeAnalyzer
 from agent_engine import ReviewEngine
 
-# Load local .env file variables if present
+# Load local .env variables
 load_dotenv()
 
 app = typer.Typer(help="CLI tool to run local code reviews before pushing code.")
@@ -17,27 +17,26 @@ async def run_analysis(repo_path: str):
         typer.echo("No unpushed or modified source files detected. Nothing to review.")
         return
 
-    typer.echo(f"Found {len(changes)} modified file(s) to analyze. Dispatching Critic Agents...")
+    typer.echo(f"Found {len(changes)} modified file(s). Running reviews and synthesizing...")
     
     try:
         engine = ReviewEngine()
         review_results = await engine.run_review(changes)
         
         has_feedback = False
-        for file_path, feedbacks in review_results.items():
-            if not feedbacks:
+        for file_path, report in review_results.items():
+            # Filter report anomalies or clean runs
+            if not report or report.strip() == "NO_ISSUES":
                 continue
             
             has_feedback = True
-            typer.secho(f"\n[!] Review for: {file_path}", fg=typer.colors.CYAN, bold=True)
-            typer.echo("=" * (17 + len(file_path)))
-            
-            for item in feedbacks:
-                typer.secho(f"\n{item['critic']} feedback:", fg=typer.colors.YELLOW, bold=True)
-                typer.echo(item['feedback'])
+            typer.secho(f"\n[!] Unified Review Report: {file_path}", fg=typer.colors.CYAN, bold=True)
+            typer.echo("=" * (25 + len(file_path)))
+            typer.echo(report)
+            typer.echo("\n")
         
         if not has_feedback:
-            typer.secho("\nAll critics cleared your changes! No issues found.", fg=typer.colors.GREEN)
+            typer.secho("\nAll critics cleared your changes! No issues worth noting were found.", fg=typer.colors.GREEN)
             
     except ValueError as e:
         typer.secho(f"\nConfiguration Error: {str(e)}", fg=typer.colors.RED, err=True)
